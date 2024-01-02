@@ -1,6 +1,13 @@
 # cilium-standalone
 ## Steps to set up cilium in standalone
-// TO DO: include Cloudlab profile and hardware details
+### Cloudlab profile details
+four-node-lb-config profile on cloud lab used for test setup 
+
+<img width="255" alt="image" src="https://github.com/SaumyaSachdev/cilium-standalone/assets/24439791/c8f7f4f9-b7a9-4611-aa57-79e5c73da7aa">
+
+Four nodes. 1 lb node (2NIC) directly connected to 2 backend server. One disconnected client node. The lb node has to be a machine with two NIC. c220g2 selected for all nodes for simplicity.
+
+
 ### Basic setup and packages
 1. Download and install Docker on all three connected nodes using the script `docker_install.sh`.
 2. Pull the stable version of the Cilium image on Node 0 from Docker using the command below:
@@ -63,14 +70,27 @@ Notes on the command above:
 
 
 ### Creating a service in the Cilium container
-// TO DO: include details on how to create VIP for the cilium node
 1. Inside the cilium container, create a service using the `cilium service update` command.
   ```
-  cilium service update --id 1 --frontend "128.110.218.84:8080" --backends "128.110.218.86:8080" --k8s-node-port --debug
+  cilium service update --id 1 --frontend "10.200.200.1:8080" --backends "10.10.2.1:8080,10.10.2.1:8080" --k8s-node-port --debug
   10.10.2.1
   ```
-2. // TO DO: include details on which IPs to be used for backends.
-
+2. 10.200.200.1 is a VIP. To setup a VIP run following commands on both backends.
+  ```
+  sudo ip link add name ipip0 type ipip external
+  sudo ip link add name ipip60 type ip6tnl external
+  sudo ip link set up dev ipip0
+  sudo ip link set up dev ipip60
+  sudo ip a a 127.0.0.42/32 dev ipip0
+  sudo sysctl -w net.ipv4.ip_forward=1
+  ```
+3. Add a route to the VIP on client by running this command
+  ```
+  //set public ip of lb
+  lb_ip =128.105.145.67 
+  //set route to vip to lb 
+  sudo ip r add 10.200.200.1 via $lb_ip dev enp1s0f0 onlink
+  ```
 
 [^1]: https://cilium.io/blog/2022/04/12/cilium-standalone-L4LB-XDP/
 
